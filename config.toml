@@ -1,0 +1,9 @@
+baseurl = "https://daniel-j-h.github.io"
+languageCode = "en-us"
+title = "Daniel J. H."
+theme = "purehugo"
+
+[params]
+  Description = "blog blog blog"
+  github = "daniel-j-h"
+  twitter = "danieljayh"
