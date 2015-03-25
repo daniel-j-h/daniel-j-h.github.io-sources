@@ -58,6 +58,18 @@ Respondents (our WebSearch service, ImageSearch service, and so on) [connect to 
 For this the services spin in an eventloop, waiting for requests to process.
 Once they [receive a request](https://github.com/daniel-j-h/DistributedSearch/blob/62a84caa478b3421e275d57ad0311c879ff89b51/Service.h#L121-L122) they handle it (i.e. they search for results) and [send matches for this query back](https://github.com/daniel-j-h/DistributedSearch/blob/62a84caa478b3421e275d57ad0311c879ff89b51/Service.h#L147-L148).
 
+```nohighlight
+
+            Surveyor
+         bind(localhost)
+        /               \
+       /                 \
+      /                   \
+connect(Surveyor)    connect(Surveyor)
+   Respondent           Respondent
+
+```
+
 Now that the basic communication is set up, let's do the serialization/deserialization part.
 
 
@@ -112,6 +124,16 @@ No results. Right, we do not have any search service running. Let's spin up a fe
     ./WebSearch
     ./VideoSearch
 
+Resulting in the following service tree:
+
+```bash
+           Search
+          /      \
+    WebSearch  VideoSearch
+```
+
+And interact with the user interface:
+
 ```bash
 Search>
 How many horns does a unicorn have?
@@ -153,6 +175,16 @@ We are now able to recursively build a tree of services:
 ./VideoSearch "tcp://localhost:9995"
 ./RecursiveSearch "tcp://*:9996" "tcp://localhost:9995"
 ./WebSearch "tcp://localhost:9996"
+./ImageSearch "tcp://localhost:9996"
+```
+
+Resulting in the following service tree:
+```bash
+           Search
+          /      \
+  VideoSearch   RecursiveSearch
+                 /           \
+	     WebSearch    ImageSearch
 ```
 
 With this setup, Search is the tree's root, with VideoSearch and RecursiveSearch attached to it and WebSearch attached to the RecursiveSearch node. Attaching more services can be done transparently on each layer of the tree. Just attach them to the subtree's specific root-service.
