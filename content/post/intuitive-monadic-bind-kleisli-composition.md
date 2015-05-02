@@ -204,3 +204,8 @@ Haskell documentation:
 ## Summary
 
 In using Monadic Bind and Kleisli Composition we not only composed error propagating pipeline stages, but we did this in a way that keeps the code clean and shows its intention to the reader. Being able to see patterns such as functional composition in code that may look totally unrelated and not in functional style at all -- say C++ in the context of parallelization -- helps tremendously.
+
+
+## Comment
+
+Join the discussion over at [HackerNews](https://news.ycombinator.com/item?id=9477386), Reddit's [/r/programming](http://www.reddit.com/r/programming/comments/34mnqf/an_intuitive_usecase_for_monadic_bind_and_kleisli/) or [/r/cpp](http://www.reddit.com/r/cpp/comments/34mnqp/an_intuitive_usecase_for_monadic_bind_and_kleisli/).
