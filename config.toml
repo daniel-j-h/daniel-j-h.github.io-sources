@@ -1,7 +1,7 @@
 baseurl = "https://daniel-j-h.github.io"
 languageCode = "en-us"
 title = "Daniel J. H."
-theme = "purehugo"
+theme = "herring-cove"
 
 [params]
   Description = "blog blog blog"
