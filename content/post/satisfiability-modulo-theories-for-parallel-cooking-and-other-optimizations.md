@@ -306,4 +306,4 @@ Using Z3's opt branch (nuZ) we then minimized the overall time it takes to cook 
 
 ## Comment
 
-Join the discussion over at [HackerNews]() or Reddit's [/r/programming]().
+Join the discussion over at [HackerNews](https://news.ycombinator.com/item?id=9514215) or Reddit's [/r/programming](https://www.reddit.com/r/programming/comments/35c04r/satisfiability_modulo_theories_for_parallel/).
