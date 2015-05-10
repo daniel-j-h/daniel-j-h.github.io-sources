@@ -37,7 +37,7 @@ Sure, I can come up with an assignment:
 Can you think of another one?
 
 In general, this is the problem of satisfiability (SAT) which is NP-complete (read: hard).
-Fortunately there are SAT-solvers that help us determine if such an assignment exists.
+There are so called SAT-solvers that help us determine if such an assignment exists.
 Most if not all SAT-solvers work with the DIMACS format that standardizes how to encode the formula.
 The syntax is as follows:
 
@@ -88,16 +88,16 @@ Let's go on with building abstraction on top of SAT solvers, because this can't 
 Now that we can encode problems for SAT solvers you may think:
 "I can encode integers as boolean literals (read: in binary), much as my computer does it" and this is exactly what Satisfiability Modulo Theories (SMT) is all about:
 an abstraction on top of SAT, that "knows" about so called theories.
-Here are some theories:
+Let's take a look at some theories and [their documentation](http://smtlib.cs.uiowa.edu/theories.shtml):
 
-* Theory of Integers: mathematical integers, not machine types
-* Theory of Reals: mathematical reals, not machine type
-* Theory of Bitvectors: vector of bits, for signed and unsigned two's-complement calculations
+* [Theory of Integers](http://smtlib.cs.uiowa.edu/theories/Ints.smt2): mathematical integers, not machine type
+* [Theory of Reals](http://smtlib.cs.uiowa.edu/theories/Reals.smt2): mathematical reals, not machine type
+* [Theory of Bitvectors](http://smtlib.cs.uiowa.edu/theories/FixedSizeBitVectors.smt2): vector of bits, for signed and unsigned two's-complement calculations
 
 In addition, SMT also "knows" about their rules, e.g. how to add two 32 bit unsigned integers represented as so called Bitvectors.
 This takes away the burden to manually implement unsigned addition for 32 boolean literals representing an integer in SAT.
 
-As with the DIMACS format for SAT, there is a standardized format for SMT, the SMT-LIB 2.0 format.
+As with the DIMACS format for SAT, there is a standardized format for SMT, the [SMT-LIB 2.0 format](http://smtlib.cs.uiowa.edu/language.shtml).
 It may look rather Lisp'ish -- but don't despair, it's still easy to understand (if not, learn yourself some Clojure for great good -- or use Z3's language bindings, e.g. the Python one).
 
 Let's see if we can find an assignment for two integers, satisfying the constraints that x is ten and y should be greater than zero and less then ten:
@@ -120,7 +120,11 @@ Let's see if we can find an assignment for two integers, satisfying the constrai
 (exit)
 ```
 
-Z3 comes up with the following:
+It is a good idea take a look at the [SMT-LIB 2.0 language specification](http://smtlib.cs.uiowa.edu/language.shtml), where its syntax is specified in Backus-Naur Form.
+For our example we have to enable model generation, otherwise the solver only tells us "sat" or "unsat".
+We also have to set the [logic](http://smtlib.cs.uiowa.edu/logics.shtml) to only use unquantified linear integer arithmetic formulas. Finally we have to express constants as functions that take no arguments.
+
+Let's see what Z3 comes up with:
 
 ```
 sat
@@ -141,8 +145,10 @@ You can learn more about it in these two papers:
 * [nuZ - An Optimizing SMT Solver](http://research.microsoft.com/en-US/people/nbjorner/nuz.pdf)
 * [nuZ - Maximal Satisfaction with Z3](http://research.microsoft.com/en-US/people/nbjorner/scss2014.pdf)
 
+What follows is strictly speaking not SMT-LIB 2.0 conforming, as there is no syntax for optimization in the specification. The following examples make use of Z3 extensions not only for optimization but also to shorten the amount of boilerplate we have to write, e.g. in creating constants. See [Z3's tutorial](http://rise4fun.com/Z3/tutorial/guide) for a quick introduction.
+
 Let's start with an example:
-we want to maximize the sum of two integers under the constraints that the integer's values should be between zero and ten:
+we want to maximize the sum of two integers under the constraints that the integer's values should be between or equal to zero and ten:
 
 ```clojure
 (declare-const x Int)
@@ -163,8 +169,8 @@ Feeding this to Z3 gives us an optimal solution, maximizing the sum and also pro
 (+ x y) |-> 20
 sat
 (model
-  (define-fun y() Int 10)
-  (define-fun x() Int 10))
+  (define-fun y () Int 10)
+  (define-fun x () Int 10))
 ```
 
 Great! This is good enough for now, let's optimize something!
@@ -182,25 +188,24 @@ Instead of working only with integers let's create an interval type that abstrac
 (define-sort Interval () (IntervalT Int Int))
 ```
 
-This is rather ugly and I have to confess, I had to look up the exact syntax.
-But anyway, now we have an interval type (what is called Sort by the SMT people) with constructor *makeInterval*, and  *begin* and *end* accessors.
+We now created an interval type (what is called Sort by the SMT people) with constructor *makeInterval*, and  *begin* and *end* accessors. For the exact syntax you may take a look at [Z3's datatypes documentation](http://rise4fun.com/Z3/tutorial/guide).
 
 Let's tell Z3 more about intervals.
-Intervals expand into the future, and have a duration.
+Valid intervals expand into the future, and have a duration.
 
 ```clojure
-(define-fun intervalExpandsIntoFuture? ((interval Interval)) (Bool)
+(define-fun intervalValid? ((interval Interval)) (Bool)
   (< (begin interval) (end interval)))
 
 (define-fun intervalDuration ((interval Interval)) (Int)
   (- (end interval) (begin interval)))
 ```
 
-If an interval requires a sescond interval to be over, this can also be expressed.
+If an interval requires a second interval to be completed, this can also be expressed (to specify dependencies).
 The same goes for the requirement of an interval being during a second interval:
 
 ```clojure
-(define-fun intervalRequiresIntervalOver ((lhs Interval) (rhs Interval)) (Bool)
+(define-fun intervalStartsAfterInterval? ((lhs Interval) (rhs Interval)) (Bool)
   (> (begin lhs) (end rhs)))
 
 (define-fun intervalDuringInterval? ((lhs Interval) (rhs Interval)) (Bool)
@@ -229,14 +234,14 @@ Here we tell Z3 that our schedule starts at time zero, intervals do not go back 
 ```clojure
 (assert (and
           (= 0 (begin schedule))
-          (intervalExpandsIntoFuture? schedule)
+          (intervalValid? schedule)
  
-          (intervalExpandsIntoFuture? makeDough)
-          (intervalExpandsIntoFuture? sliceOnions)
-          (intervalExpandsIntoFuture? sliceTomatos)
-          (intervalExpandsIntoFuture? bakeInOven)
-          (intervalExpandsIntoFuture? servePizza)
-          (intervalExpandsIntoFuture? pourWine)
+          (intervalValid? makeDough)
+          (intervalValid? sliceOnions)
+          (intervalValid? sliceTomatos)
+          (intervalValid? bakeInOven)
+          (intervalValid? servePizza)
+          (intervalValid? pourWine)
  
           (intervalDuringInterval? makeDough schedule)
           (intervalDuringInterval? sliceOnions schedule)
@@ -252,11 +257,11 @@ Here we tell Z3 that our schedule starts at time zero, intervals do not go back 
           (< 2 (intervalDuration servePizza))
           (< 2 (intervalDuration pourWine))
  
-          (intervalRequiresIntervalOver bakeInOven makeDough)
-          (intervalRequiresIntervalOver bakeInOven sliceOnions)
-          (intervalRequiresIntervalOver bakeInOven sliceTomatos)
+          (intervalStartsAfterInterval? bakeInOven makeDough)
+          (intervalStartsAfterInterval? bakeInOven sliceOnions)
+          (intervalStartsAfterInterval? bakeInOven sliceTomatos)
  
-          (intervalRequiresIntervalOver servePizza bakeInOven))
+          (intervalStartsAfterInterval? servePizza bakeInOven))
  
 (minimize (intervalDuration schedule))
 ```
@@ -281,13 +286,13 @@ We then have to bake the Pizza, and before it is done pour the wine; a few minut
 Enjoy!
 
 
-Note: although this is an optimal schedule we certainly want to improve the constraints , e.g. you want to specify the number of cooks -- but 70 lines of code is a good point to stop with an example.
+Note: although this is an optimal schedule we certainly want to improve the constraints, e.g. you want to specify the number of cooks -- but 70 lines of code is a good point to stop with an example.
 
 
 
 ## Further Remarks
 
-Pandoc-generated notes are available [here](https://gist.github.com/daniel-j-h/09c772b706db7a7240a4).
+My notes that can be used with pandoc and pandoc-citeproc are available [here](https://gist.github.com/daniel-j-h/09c772b706db7a7240a4).
 The parallel cooking code can be found [here](https://gist.github.com/daniel-j-h/09c772b706db7a7240a4#file-9-parallelize-clj).
 
 If you are still reading this, [here](https://gist.github.com/daniel-j-h/09c772b706db7a7240a4#file-8-layouting-clj) is the promised layouting example including CSS from a solution, which is a bit more elaborate.
