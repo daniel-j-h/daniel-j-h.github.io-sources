@@ -184,28 +184,27 @@ Similar approaches work for time series, and even audio and video if you fingerp
 ## Further Reading
 
 The BK-tree is perfectly suited for well-behaving and discrete distances.
-For more advanced use-cases it can make sense to have a look at other datastructures.
+For more advanced use-cases it can make sense to have a look at different metric trees.
 
 The Vantage-Point tree (VP-tree) can be used for fast nearest neighbor queries in metric spaces.
 
 > ["Data Structures and Algorithms for Nearest Neighbor Search in General Metric Spaces", Yianilos](http://dl.acm.org/citation.cfm?id=313789)
 
-Constructing the VP-tree works by picking a vantage point and a distance to it bisecting the space:
+Constructing the VP-tree works by picking a vantage point and a distance which bisects the space:
 half of the items are within the distance "radius", half of the items are outside of the distance "radius", creating a binary tree.
 The VP-tree paper has a great visualization on [page 2, Figure 1: VP-tree decomposition](http://pnylab.com/pny/papers/vptree/main.html).
 
-Additional improvements can be made with Geometric Near-neighbor Access Trees (GNATs).
+Additional improvements to the tree's balance and efficiency can be made with Geometric Near-neighbor Access Trees (GNATs).
 
 > ["Near Neighbor Search in Large Metric Spaces", Brin](http://dl.acm.org/citation.cfm?id=673006)
 
-The key idea for GNATs is to split `k` far apart split points, recursive Voronoi partitioning
-
 > ["Geometric Near-neighbor Access Tree (GNAT) revisited", Kimmo Fredriksson](https://arxiv.org/abs/1605.05944)
 
-https://en.wikipedia.org/wiki/Locality-sensitive_hashing
+The key idea for GNATs is to recursively pick far apart split points establishing a Voronoi space partitioning.
+GNAT's are more expensive to construct and require more memory than VP-trees but can adapt better do the data in high-dimensional metric spaces.
 
 
 ## Summary
 
-The BK-tree can efficiently answer nearest neighbor queries for metric spaces and is suited for discrete distances.
-For more general use-cases (especially continuous distances) the VP-tree and GNATs are better suited.
+The BK-tree is easy to implement and can efficiently answer nearest neighbor queries for metric spaces and is well suited for discrete distances.
+For more general use-cases VP-trees and GNATs are good candidates to look into.
